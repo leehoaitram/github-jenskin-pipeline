@@ -11,10 +11,9 @@ pipeline {
     }
     stages {
         stage('Delay') {
-            // This stage introduces a delay before proceeding with the build
             steps {
                 script {
-                    // Sleep for 10 seconds or adjust the time as needed
+                    // Sleep for 10 seconds
                     sleep time: 10, unit: 'SECONDS'
                 }
             }
@@ -22,48 +21,96 @@ pipeline {
         stage('Build') {
             steps {
                 echo "Building the code using Maven"
-                sh 'mvn clean install'
+                script {
+                    if (isUnix()) {
+                        sh 'mvn clean install'
+                    } else {
+                        bat 'mvn clean install'
+                    }
+                }
             }
         }
         stage('Unit and Integration Tests') {
             steps {
                 echo "Running unit tests with Maven"
-                sh 'mvn test'
-                echo "Running integration tests"
-                sh 'mvn verify'
+                script {
+                    if (isUnix()) {
+                        sh 'mvn test'
+                        echo "Running integration tests"
+                        sh 'mvn verify'
+                    } else {
+                        bat 'mvn test'
+                        echo "Running integration tests"
+                        bat 'mvn verify'
+                    }
+                }
             }
         }
         stage('Code Analysis') {
             steps {
                 echo "Analysing code with SonarQube"
-                sh 'mvn sonar:sonar'
+                script {
+                    if (isUnix()) {
+                        sh 'mvn sonar:sonar'
+                    } else {
+                        bat 'mvn sonar:sonar'
+                    }
+                }
             }
         }
         stage('Security Scan') {
             steps {
                 echo "Performing security scan with OWASP ZAP"
-                sh 'zap-cli start'
-                sh 'zap-cli quick-scan --self-contained --spider -r ${DIRECTORY_PATH}'
-                sh 'zap-cli stop'
+                script {
+                    if (isUnix()) {
+                        sh 'zap-cli start'
+                        sh 'zap-cli quick-scan --self-contained --spider -r ${DIRECTORY_PATH}'
+                        sh 'zap-cli stop'
+                    } else {
+                        bat 'zap-cli start'
+                        bat 'zap-cli quick-scan --self-contained --spider -r %DIRECTORY_PATH%'
+                        bat 'zap-cli stop'
+                    }
+                }
             }
         }
         stage('Deploy to Staging') {
             steps {
                 echo "Deploying to staging server: ${env.STAGING_SERVER}"
-                sh 'scp -i your-key.pem target/*.war ec2-user@${STAGING_SERVER}:/path/to/deploy'
+                script {
+                    if (isUnix()) {
+                        sh 'scp -i your-key.pem target/*.war ec2-user@${STAGING_SERVER}:/path/to/deploy'
+                    } else {
+                        // Use PSCP
+                        bat 'pscp -i your-key.ppk target\\*.war ec2-user@${STAGING_SERVER}:/path/to/deploy'
+                    }
+                }
             }
         }
         stage('Integration Tests on Staging') {
             steps {
                 echo "Running integration tests on the staging server"
-                // Example command
-                sh 'ssh -i your-key.pem ec2-user@${STAGING_SERVER} "cd /path/to/deploy && mvn integration-test"'
+                script {
+                    if (isUnix()) {
+                        sh 'ssh -i your-key.pem ec2-user@${STAGING_SERVER} "cd /path/to/deploy && mvn integration-test"'
+                    } else {
+                        // Use Plink
+                        bat 'plink -i your-key.ppk ec2-user@${STAGING_SERVER} "cd /path/to/deploy && mvn integration-test"'
+                    }
+                }
             }
         }
         stage('Deploy to Production') {
             steps {
                 echo "Deploying to production server: ${env.PRODUCTION_SERVER}"
-                sh 'scp -i your-key.pem target/*.war ec2-user@${PRODUCTION_SERVER}:/path/to/deploy'
+                script {
+                    if (isUnix()) {
+                        sh 'scp -i your-key.pem target/*.war ec2-user@${PRODUCTION_SERVER}:/path/to/deploy'
+                    } else {
+                        // Use PSCP
+                        bat 'pscp -i your-key.ppk target\\*.war ec2-user@${PRODUCTION_SERVER}:/path/to/deploy'
+                    }
+                }
             }
         }
     }
