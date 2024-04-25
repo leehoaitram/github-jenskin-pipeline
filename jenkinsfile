@@ -2,9 +2,9 @@ pipeline {
   agent any
 
   environment {
-    DIRECTORY_PATH = 'dummy path to code'  
+    DIRECTORY_PATH = 'dummy path to code'
     TESTING_ENVIRONMENT = 'test-env'
-    PRODUCTION_ENVIRONMENT = 'Vienna' 
+    PRODUCTION_ENVIRONMENT = 'Vienna'
   }
 
   triggers {
