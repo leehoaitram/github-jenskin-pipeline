@@ -6,8 +6,8 @@ pipeline {
     }
     environment {
         DIRECTORY_PATH = 'dummy path to code'
-        TESTING_ENVIRONMENT = 'test-env'
-        PRODUCTION_ENVIRONMENT = 'Vienna' 
+        STAGING_SERVER = 'AWS EC2 - Staging'
+        PRODUCTION_SERVER = 'AWS EC2 - Production'
     }
     stages {
         stage('Delay') {
@@ -21,37 +21,49 @@ pipeline {
         }
         stage('Build') {
             steps {
-                echo "fetch the source code from the directory path specified by the environment variable"
-                echo "compile the code and generate any necessary artifacts"
+                echo "Building the code using Maven"
+                sh 'mvn clean install'
             }
         }
-        stage('Test') {
+        stage('Unit and Integration Tests') {
             steps {
-                echo "unit tests"
-                echo "integration tests"
+                echo "Running unit tests with Maven"
+                sh 'mvn test'
+                echo "Running integration tests"
+                sh 'mvn verify'
             }
         }
-        stage('Code Quality Check') {
+        stage('Code Analysis') {
             steps {
-                echo "Check the quality of the code"
+                echo "Analysing code with SonarQube"
+                sh 'mvn sonar:sonar'
             }
         }
-        stage('Deploy') {
+        stage('Security Scan') {
             steps {
-                echo "deploy the application to a testing environment specified by the environment variable"
+                echo "Performing security scan with OWASP ZAP"
+                sh 'zap-cli start'
+                sh 'zap-cli quick-scan --self-contained --spider -r ${DIRECTORY_PATH}'
+                sh 'zap-cli stop'
             }
         }
-        stage('Approval') {
+        stage('Deploy to Staging') {
             steps {
-                script {
-                    echo "waiting for approval."
-                    sleep 10
-                }
+                echo "Deploying to staging server: ${env.STAGING_SERVER}"
+                sh 'scp -i your-key.pem target/*.war ec2-user@${STAGING_SERVER}:/path/to/deploy'
+            }
+        }
+        stage('Integration Tests on Staging') {
+            steps {
+                echo "Running integration tests on the staging server"
+                // Example command
+                sh 'ssh -i your-key.pem ec2-user@${STAGING_SERVER} "cd /path/to/deploy && mvn integration-test"'
             }
         }
         stage('Deploy to Production') {
             steps {
-                echo "deploy the code to the production environment: ${env.PRODUCTION_ENVIRONMENT}"
+                echo "Deploying to production server: ${env.PRODUCTION_SERVER}"
+                sh 'scp -i your-key.pem target/*.war ec2-user@${PRODUCTION_SERVER}:/path/to/deploy'
             }
         }
     }
