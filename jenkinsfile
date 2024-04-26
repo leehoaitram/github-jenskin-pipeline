@@ -1,66 +1,70 @@
 pipeline {
     agent any
     triggers {
-        // Poll SCM every 2 minutes
-        pollSCM('H/2 * * * *')
+        // Trigger the pipeline on a push to the repository
+        githubPush()
     }
-    tools {
-        // Specify Maven tool
-        maven 'Maven'
+    environment {
+        DIRECTORY_PATH = 'dummy path to code'
+        STAGING_SERVER = 'AWS EC2 - Staging'
+        PRODUCTION_SERVER = 'AWS EC2 - Production'
     }
     stages {
+        stage('Delay') {
+            // This stage introduces a delay before proceeding with the build
+            steps {
+                script {
+                    // Sleep for 10 seconds or adjust the time as needed
+                    sleep time: 10, unit: 'SECONDS'
+                }
+            }
+        }
         stage('Build') {
             steps {
-                // Use Maven to build the project
-                sh 'mvn clean package'
+                echo "Building the code using Maven"
+                sh 'mvn clean install'
             }
         }
         stage('Unit and Integration Tests') {
             steps {
-                // Run tests using Maven
+                echo "Running unit tests with Maven"
                 sh 'mvn test'
+                echo "Running integration tests"
+                sh 'mvn verify'
             }
         }
         stage('Code Analysis') {
             steps {
-                // Using SonarQube for code analysis
+                echo "Analysing code with SonarQube"
                 sh 'mvn sonar:sonar'
             }
         }
         stage('Security Scan') {
             steps {
-                // Running OWASP ZAP security scan
-                sh './zap.sh'
+                echo "Performing security scan with OWASP ZAP"
+                sh 'zap-cli start'
+                sh 'zap-cli quick-scan --self-contained --spider -r ${DIRECTORY_PATH}'
+                sh 'zap-cli stop'
             }
         }
         stage('Deploy to Staging') {
             steps {
-                // Simulating deployment to AWS EC2 staging
-                sh 'echo "Deploying to staging environment..."'
-                // Additional deployment steps would go here
+                echo "Deploying to staging server: ${env.STAGING_SERVER}"
+                sh 'scp -i your-key.pem target/*.war ec2-user@${STAGING_SERVER}:/path/to/deploy'
             }
         }
         stage('Integration Tests on Staging') {
             steps {
-                // Run integration tests on the staging server
-                sh 'echo "Running integration tests in staging..."'
-                // Additional testing steps would go here
+                echo "Running integration tests on the staging server"
+                // Example command
+                sh 'ssh -i your-key.pem ec2-user@${STAGING_SERVER} "cd /path/to/deploy && mvn integration-test"'
             }
         }
         stage('Deploy to Production') {
             steps {
-                // Simulating deployment to AWS EC2 production
-                sh 'echo "Deploying to production environment..."'
-                // Additional deployment steps would go here
+                echo "Deploying to production server: ${env.PRODUCTION_SERVER}"
+                sh 'scp -i your-key.pem target/*.war ec2-user@${PRODUCTION_SERVER}:/path/to/deploy'
             }
-        }
-    }
-    post {
-        success {
-            echo 'Pipeline completed successfully.'
-        }
-        failure {
-            echo 'Pipeline failed.'
         }
     }
 }
