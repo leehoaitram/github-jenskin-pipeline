@@ -1,115 +1,16 @@
 pipeline {
     agent any
-    triggers {
-        // Trigger the pipeline on a push to the repository
-        githubPush()
-    }
-    environment {
-        DIRECTORY_PATH = 'dummy path to code'
-        STAGING_SERVER = 'AWS EC2 - Staging'
-        PRODUCTION_SERVER = 'AWS EC2 - Production'
+    tools {
+        maven 'Maven' // This name must match exactly with the name set in Global Tool Configuration
     }
     stages {
-        stage('Delay') {
-            // This stage introduces a delay before proceeding with the build
-            steps {
-                script {
-                    // Sleep for 10 seconds or adjust the time as needed
-                    sleep time: 10, unit: 'SECONDS'
-                }
-            }
-        }
         stage('Build') {
             steps {
-                echo "Building the code using Maven"
                 script {
                     if (isUnix()) {
                         sh 'mvn clean install'
                     } else {
                         bat 'mvn clean install'
-                    }
-                }
-            }
-        }
-        stage('Unit and Integration Tests') {
-            steps {
-                echo "Running unit tests with Maven"
-                script {
-                    if (isUnix()) {
-                        sh 'mvn test'
-                        echo "Running integration tests"
-                        sh 'mvn verify'
-                    } else {
-                        bat 'mvn test'
-                        echo "Running integration tests"
-                        bat 'mvn verify'
-                    }
-                }
-            }
-        }
-        stage('Code Analysis') {
-            steps {
-                echo "Analysing code with SonarQube"
-                script {
-                    if (isUnix()) {
-                        sh 'mvn sonar:sonar'
-                    } else {
-                        bat 'mvn sonar:sonar'
-                    }
-                }
-            }
-        }
-        stage('Security Scan') {
-            steps {
-                echo "Performing security scan with OWASP ZAP"
-                script {
-                    if (isUnix()) {
-                        sh 'zap-cli start'
-                        sh 'zap-cli quick-scan --self-contained --spider -r ${DIRECTORY_PATH}'
-                        sh 'zap-cli stop'
-                    } else {
-                        bat 'zap-cli start'
-                        bat 'zap-cli quick-scan --self-contained --spider -r %DIRECTORY_PATH%'
-                        bat 'zap-cli stop'
-                    }
-                }
-            }
-        }
-        stage('Deploy to Staging') {
-            steps {
-                echo "Deploying to staging server: ${env.STAGING_SERVER}"
-                script {
-                    if (isUnix()) {
-                        sh 'scp -i your-key.pem target/*.war ec2-user@${STAGING_SERVER}:/path/to/deploy'
-                    } else {
-                        // Assuming use of PSCP from PuTTY for Windows
-                        bat 'pscp -i your-key.ppk target\\*.war ec2-user@${STAGING_SERVER}:/path/to/deploy'
-                    }
-                }
-            }
-        }
-        stage('Integration Tests on Staging') {
-            steps {
-                echo "Running integration tests on the staging server"
-                script {
-                    if (isUnix()) {
-                        sh 'ssh -i your-key.pem ec2-user@${STAGING_SERVER} "cd /path/to/deploy && mvn integration-test"'
-                    } else {
-                        // Assuming use of Plink from PuTTY for Windows
-                        bat 'plink -i your-key.ppk ec2-user@${STAGING_SERVER} "cd /path/to/deploy && mvn integration-test"'
-                    }
-                }
-            }
-        }
-        stage('Deploy to Production') {
-            steps {
-                echo "Deploying to production server: ${env.PRODUCTION_SERVER}"
-                script {
-                    if (isUnix()) {
-                        sh 'scp -i your-key.pem target/*.war ec2-user@${PRODUCTION_SERVER}:/path/to/deploy'
-                    } else {
-                        // Assuming use of PSCP from PuTTY for Windows
-                        bat 'pscp -i your-key.ppk target\\*.war ec2-user@${PRODUCTION_SERVER}:/path/to/deploy'
                     }
                 }
             }
