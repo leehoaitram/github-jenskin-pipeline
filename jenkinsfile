@@ -45,12 +45,5 @@ pipeline {
         }
     }
 
-    post {
-        success {
-            mail bcc: '', body: 'Pipeline completed successfully.', cc: '', from: '', replyTo: '', subject: 'Success: Pipeline Completion', to: 'you@example.com'
-        }
-        failure {
-            mail bcc: '', body: 'Pipeline failed.', cc: '', from: '', replyTo: '', subject: 'Failure: Pipeline Error', to: 'you@example.com'
-        }
-    }
+
 }
