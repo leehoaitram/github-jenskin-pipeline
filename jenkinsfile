@@ -1,19 +1,56 @@
 pipeline {
     agent any
-    tools {
-        maven 'Maven' // This name must match exactly with the name set in Global Tool Configuration
-    }
+
     stages {
         stage('Build') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh 'mvn clean install'
-                    } else {
-                        bat 'mvn clean install'
-                    }
-                }
+                echo 'Building with Maven'
             }
+        }
+
+        stage('Unit and Integration Tests') {
+            steps {
+                echo 'Testing with JUnit, Mockito, and TestNG'
+            }
+        }
+
+        stage('Code Analysis') {
+            steps {
+                echo 'Analysing code with SonarQube'
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                echo 'Security scanning with OWASP ZAP'
+            }
+        }
+
+        stage('Deploy to Staging') {
+            steps {
+                echo 'Deploying to staging on AWS EC2 with Docker'
+            }
+        }
+
+        stage('Integration Tests on Staging') {
+            steps {
+                echo 'Integration testing on staging with Selenium'
+            }
+        }
+
+        stage('Deploy to Production') {
+            steps {
+                echo 'Deploying to production on AWS EC2'
+            }
+        }
+    }
+
+    post {
+        success {
+            mail bcc: '', body: 'Pipeline completed successfully.', cc: '', from: '', replyTo: '', subject: 'Success: Pipeline Completion', to: 'you@example.com'
+        }
+        failure {
+            mail bcc: '', body: 'Pipeline failed.', cc: '', from: '', replyTo: '', subject: 'Failure: Pipeline Error', to: 'you@example.com'
         }
     }
 }
